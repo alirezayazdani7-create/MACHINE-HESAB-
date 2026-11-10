@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#101827">
+<meta name="description" content="ماشین حساب ساده هزینه معاملات اهرمی">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<title>ماشین حساب</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#f5f6f8;font-family:Tahoma,Arial,sans-serif;min-height:100vh;padding:22px 15px}
+main{max-width:440px;margin:0 auto}
+header{text-align:center;margin:22px 0 28px}
+h1{font-size:25px;margin:0 0 7px}
+.sub{color:#aeb5c2;font-size:13px}
+.card{background:#171d2a;border:1px solid #293346;border-radius:19px;padding:19px;margin-bottom:15px}
+label{display:block;color:#c2c8d2;font-size:14px;margin-bottom:8px}
+input{width:100%;height:56px;border:1px solid #39465b;border-radius:12px;background:#222b3a;color:white;padding:10px 14px;font:22px Tahoma,Arial,sans-serif;direction:ltr;text-align:left;outline:none}
+input:focus{border-color:#18c3bd}
+.field{margin-bottom:17px}
+button{width:100%;height:52px;border:0;border-radius:12px;background:#16bdb8;color:#062c2b;font: bold 17px Tahoma,Arial,sans-serif}
+.results{display:none}
+.line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #30394a}
+.line:last-child{border:0}
+.k{color:#b7bfcc;font-size:13px}
+.v{font-weight:bold;font-size:16px;direction:ltr;text-align:left}
+.total{background:#123d3d;border:1px solid #147b78;border-radius:14px;padding:16px;margin-top:15px}
+.total .k{color:#c4e9e7}
+.total .v{font-size:26px;color:#5ce0d8}
+.small{font-size:11px;color:#8994a5;line-height:1.8;margin:14px 2px 0}
+.err{color:#ff8991;font-size:12px;display:none;margin-top:7px}
+</style>
+</head>
+<body>
+<main>
+<header>
+<h1>ماشین حساب</h1>
+<div class="sub">محاسبه سریع هزینه معامله اهرمی</div>
+</header>
+<section class="card">
+<div class="field">
+<label for="amount">مبلغ ورودی شما (دلار)</label>
+<input id="amount" type="number" min="0" step="any" inputmode="decimal" placeholder="مثلاً 100">
+</div>
+<div class="field">
+<label for="leverage">اهرم</label>
+<input id="leverage" type="number" min="1" max="100" step="1" inputmode="numeric" placeholder="از 1 تا 100">
+<div class="err" id="error">اهرم باید عددی بین ۱ تا ۱۰۰ باشد و مبلغ بیشتر از صفر باشد.</div>
+</div>
+<button id="calculate">محاسبه هزینه نهایی</button>
+</section>
+
+<section class="card results" id="results">
+<div class="line"><span class="k">ارزش کل معامله</span><span class="v" id="position">—</span></div>
+<div class="line"><span class="k">مجموع هزینه‌ها به دلار</span><span class="v" id="cost">—</span></div>
+<div class="line"><span class="k">هزینه نسبت به پول ورودی</span><span class="v" id="percent">—</span></div>
+<div class="total">
+<div class="k">مبلغ باقی‌مانده پس از کسر هزینه‌ها</div>
+<div class="v" id="net">—</div>
+</div>
+<div class="small">هزینه‌ها به‌صورت تخمینی و پشت‌صحنه محاسبه شده‌اند: کارمزد ورود و خروج هرکدام ۰٫۰۰۹٪، اسلیپیج ورود و خروج هرکدام ۰٫۰۵٪ و یک نوبت فاندینگ ۰٫۰۱٪ از ارزش پوزیشن. نرخ واقعی فاندینگ و اسلیپیج با صرافی، ارز و مدت نگهداری تغییر می‌کند؛ بنابراین نتیجه تخمینی است.</div>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const fmt=n=>'$'+n.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:4});
+function calc(){
+ const amount=Number($('amount').value), lev=Number($('leverage').value);
+ if(!(amount>0) || !(Number.isInteger(lev)&&lev>=1&&lev<=100)){
+   $('error').style.display='block';$('results').style.display='none';return;
+ }
+ $('error').style.display='none';
+ const position=amount*lev;
+ // Hidden default assumptions: 0.009% entry + 0.009% exit fee,
+ // 0.05% entry + 0.05% exit slippage, one 0.01% funding settlement.
+ const feeRate=0.00009*2;
+ const slippageRate=0.0005*2;
+ const fundingRate=0.0001;
+ const totalCost=position*(feeRate+slippageRate+fundingRate);
+ const costPercent=totalCost/amount*100;
+ const net=amount-totalCost;
+ $('position').textContent=fmt(position);
+ $('cost').textContent=fmt(totalCost);
+ $('percent').textContent=costPercent.toFixed(3)+'٪';
+ $('net').textContent=fmt(net);
+ $('results').style.display='block';
+}
+$('calculate').addEventListener('click',calc);
+['amount','leverage'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')calc()}));
+</script>
+<script>if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) { window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js").catch(() => {})); }</script>
+</body>
+</html>
